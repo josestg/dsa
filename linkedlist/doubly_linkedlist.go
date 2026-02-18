@@ -193,11 +193,16 @@ func (l *DoublyLinkedList[E]) TryHead() (E, bool) {
 //
 // SCORE: 10
 func (l *DoublyLinkedList[E]) Prepend(data E) {
-	// hint: 1) create new node with NewBinaryNode(data, l.head, nil)
-	//       2) if empty: set head and tail to new node
-	//       3) else: set old head.prev = new node, then head = new node
-	//       4) increment size
-	panic("todo: please implement me!")
+	nn := NewBinaryNode(data, l.head, nil)
+
+	if l.Empty() {
+		l.head = nn
+		l.tail = nn
+	} else {
+		l.head.prev = nn
+		l.head = nn
+	}
+	l.size++
 }
 
 // Append adds an element to the back of the list.
@@ -224,11 +229,16 @@ func (l *DoublyLinkedList[E]) Prepend(data E) {
 //
 // SCORE: 15
 func (l *DoublyLinkedList[E]) Append(data E) {
-	// hint: 1) create new node with NewBinaryNode(data, nil, l.tail)
-	//       2) if empty: set head and tail to new node
-	//       3) else: set old tail.next = new node, then tail = new node
-	//       4) increment size
-	panic("todo: please implement me!")
+	nn := NewBinaryNode(data, nil, l.tail)
+	if l.Empty() {
+		l.head = nn
+		l.tail = nn
+	} else {
+		l.tail.next = nn
+		l.tail = nn
+	}
+
+	l.size++
 }
 
 // Pop removes and returns the last element.
@@ -278,12 +288,20 @@ func (l *DoublyLinkedList[E]) Pop() E {
 //
 // SCORE: 15
 func (l *DoublyLinkedList[E]) TryPop() (E, bool) {
-	// hint: 1) if empty, return (zero, false)
-	//       2) save tail.data
-	//       3) if size == 1: call reset()
-	//       4) else: newTail = tail.prev; newTail.next = nil; tail = newTail
-	//       5) decrement size, return (saved, true)
-	panic("todo: please implement me!")
+	if l.Empty() {
+		return generics.ZeroValue[E](), false
+	}
+
+	currLastElement := l.tail.data
+	if l.Size() == 1 {
+		l.reset()
+	} else {
+		prev := l.tail.prev
+		prev.next = nil
+		l.tail = prev
+		l.size--
+	}
+	return currLastElement, true
 }
 
 // Shift removes and returns the first element.
@@ -330,12 +348,20 @@ func (l *DoublyLinkedList[E]) Shift() E {
 //
 // SCORE: 10
 func (l *DoublyLinkedList[E]) TryShift() (E, bool) {
-	// hint: 1) if empty, return (zero, false)
-	//       2) save head.data
-	//       3) if size == 1: call reset()
-	//       4) else: newHead = head.next; newHead.prev = nil; head = newHead
-	//       5) decrement size, return (saved, true)
-	panic("todo: please implement me!")
+	if l.Empty() {
+		return generics.ZeroValue[E](), false
+	}
+	tempHeadElement := l.head.data
+	if l.Size() == 1 {
+		l.reset()
+	} else {
+		newHeadElement := l.head.next
+		newHeadElement.prev = nil
+		l.head = newHeadElement
+		l.size--
+	}
+
+	return tempHeadElement, true
 }
 
 // Iter iterates over all elements from front to back.
@@ -441,14 +467,24 @@ func (l *DoublyLinkedList[E]) EnumBackward(yield func(int, E) bool) {
 
 // SCORE: 10
 func (l *DoublyLinkedList[E]) iterForward(yield func(node *BinaryNode[E]) bool) {
-	// hint: p := l.head; loop while p != nil; call yield(p); p = p.next
-	panic("todo: please implement me!")
+	p := l.head
+	for p != nil {
+		if !yield(p) {
+			break
+		}
+		p = p.next
+	}
 }
 
 // SCORE: 10
 func (l *DoublyLinkedList[E]) iterBackward(yield func(*BinaryNode[E]) bool) {
-	// hint: p := l.tail; loop while p != nil; call yield(p); p = p.prev
-	panic("todo: please implement me!")
+	p := l.tail
+	for p != nil {
+		if !yield(p) {
+			break
+		}
+		p = p.prev
+	}
 }
 
 // Get retrieves the element at the given index.
@@ -494,10 +530,20 @@ func (l *DoublyLinkedList[E]) Get(index int) E {
 //
 // SCORE: 10
 func (l *DoublyLinkedList[E]) TryGet(index int) (E, bool) {
-	// hint: 1) check bounds (empty || index < 0 || index >= size)
-	//       2) traverse using iterForward counting until index
-	//       3) return (node.data, true)
-	panic("todo: please implement me!")
+	if l.Empty() || index < 0 || index >= l.size {
+		return generics.ZeroValue[E](), false
+	}
+
+	p := l.head
+	curr := 0
+	for p != nil {
+		if curr == index {
+			return p.data, true
+		}
+		p = p.next
+		curr++
+	}
+	return generics.ZeroValue[E](), false
 }
 
 // Set updates the element at the given index.
@@ -547,11 +593,21 @@ func (l *DoublyLinkedList[E]) Set(index int, data E) {
 //
 // SCORE: 5
 func (l *DoublyLinkedList[E]) TrySet(index int, data E) bool {
-	// hint: 1) check bounds, return false if invalid
-	//       2) traverse to node at index using iterForward
-	//       3) update node.data = data
-	//       4) return true
-	panic("todo: please implement me!")
+	if l.Empty() || index < 0 || index >= l.size {
+		return false
+	}
+
+	p := l.head
+	curr := 0
+	for p != nil {
+		if curr == index {
+			p.data = data
+			return true
+		}
+		p = p.next
+		curr++
+	}
+	return false
 }
 
 func (l *DoublyLinkedList[E]) checkBounds(index int) {
@@ -621,14 +677,45 @@ func (l *DoublyLinkedList[E]) reset() {
 //
 // SCORE: 5
 func (l *DoublyLinkedList[E]) Insert(index int, data E) {
-	// hint: 1) if index == 0: Prepend(data); return
-	//       2) if index == Size(): Append(data); return
-	//       3) check bounds, panic if invalid
-	//       4) traverse to node at (index-1) => prev
-	//       5) create new node with next=prev.next, prev=prev
-	//       6) rewire: prev.next.prev = new node; prev.next = new node
-	//       7) increment size
-	panic("todo: please implement me!")
+	if index == 0 {
+		np := NewBinaryNode(data, l.head, nil)
+		if l.Empty() {
+			l.head = np
+			l.tail = np
+		} else {
+			l.head.prev = np
+			l.head = np
+		}
+		l.size++
+		return
+	}
+
+	if index == l.Size() {
+		nn := NewBinaryNode(data, nil, l.tail)
+		if l.Empty() {
+			l.head = nn
+			l.tail = nn
+		} else {
+			l.tail.next = nn
+			l.tail = nn
+		}
+		l.size++
+		return
+	}
+	l.checkBounds(index)
+
+	p := l.head
+	curr := 0
+	for curr < index-1 {
+		p = p.next
+		curr++
+	}
+
+	nd := NewBinaryNode(data, p.next, p)
+
+	p.next.prev = nd
+	p.next = nd
+	l.size++
 }
 
 // Remove deletes and returns the element at the given index.
@@ -680,12 +767,32 @@ func (l *DoublyLinkedList[E]) Remove(index int) E {
 //
 // SCORE: 10
 func (l *DoublyLinkedList[E]) TryRemove(index int) (E, bool) {
-	// hint: 1) check bounds, return (zero, false) if invalid
-	//       2) if index == 0: return TryShift()
-	//       3) if index == size-1: return TryPop()
-	//       4) traverse to node at index (can start from head or tail)
-	//       5) rewire: curr.prev.next = curr.next; curr.next.prev = curr.prev
-	//       6) clear curr.prev/next (help GC), decrement size
-	//       7) return (curr.data, true)
-	panic("todo: please implement me!")
+	if l.Empty() || index < 0 || index >= l.size {
+		return generics.ZeroValue[E](), false
+	}
+	if index == 0 {
+		return l.TryShift()
+	}
+
+	if index == l.Size()-1 {
+		return l.TryPop()
+	}
+
+	var curr *BinaryNode[E]
+	curr = l.head
+	for i := 0; i < index; i++ {
+		curr = curr.next
+	}
+
+	val := curr.data
+
+	curr.prev.next = curr.next
+	curr.next.prev = curr.prev
+
+	curr.prev = nil
+	curr.next = nil
+
+	l.size--
+
+	return val, true
 }

@@ -52,10 +52,11 @@
 package graph
 
 import (
-	"iter"
-
+	"fmt"
 	"github.com/josestg/dsa/hashmap"
 	"github.com/josestg/dsa/linkedlist"
+	"github.com/josestg/dsa/sequence"
+	"iter"
 )
 
 // Graph represents a graph using an adjacency list.
@@ -114,7 +115,12 @@ func (g *Graph[V]) ensureNode(v V) *linkedlist.SinglyLinkedList[V] {
 	// hint: 1) get neighbors list from g.adjacency.Get(v)
 	//       2) if not found, create new list and g.adjacency.Put(v, list)
 	//       3) return the neighbors list
-	panic("todo: please implement me!")
+	n, ok := g.adjacency.Get(v)
+	if !ok {
+		n = linkedlist.NewSinglyLinkedList[V]()
+		g.adjacency.Put(v, n)
+	}
+	return n
 }
 
 // Size returns the number of vertices.
@@ -176,7 +182,23 @@ func (g *Graph[V]) AddEdge(from, to V) {
 	//       2) check if edge exists (iterate list, if v == to, return)
 	//       3) list.Append(to)
 	//       4) if undirected (!g.directed), also add reverse edge
-	panic("todo: please implement me!")
+	list := g.ensureNode(from)
+	for v := range list.Iter {
+		if v == to {
+			return
+		}
+	}
+
+	list.Append(to)
+	if !g.directed {
+		rev := g.ensureNode(to)
+		for v := range rev.Iter {
+			if v == from {
+				return
+			}
+		}
+		rev.Append(from)
+	}
 }
 
 // DelEdge removes an edge between two vertices.
@@ -203,7 +225,26 @@ func (g *Graph[V]) DelEdge(from, to V) {
 	// hint: 1) get list from g.adjacency.Get(from)
 	//       2) iterate with sequence.Enum, find 'to', call list.Remove(i)
 	//       3) if undirected, repeat for reverse direction
-	panic("todo: please implement me!")
+	list, ok := g.adjacency.Get(from)
+	if ok {
+		for i, v := range sequence.Enum(list.Iter) {
+			if v == to {
+				list.Remove(i)
+				break
+			}
+		}
+	}
+	if !g.directed {
+		list, ok := g.adjacency.Get(to)
+		if ok {
+			for i, v := range sequence.Enum(list.Iter) {
+				if v == from {
+					list.Remove(i)
+					break
+				}
+			}
+		}
+	}
 }
 
 // HasEdge checks if an edge exists from one vertex to another.
@@ -223,7 +264,15 @@ func (g *Graph[V]) HasEdge(from, to V) bool {
 	// hint: 1) get list from g.adjacency.Get(from)
 	//       2) iterate list, if v == to, return true
 	//       3) return false
-	panic("todo: please implement me!")
+	list, ok := g.adjacency.Get(from)
+	if ok {
+		for v := range list.Iter {
+			if v == to {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // HasVertex checks if a vertex exists in the graph.
@@ -240,7 +289,7 @@ func (g *Graph[V]) HasEdge(from, to V) bool {
 // SCORE: 5
 func (g *Graph[V]) HasVertex(v V) bool {
 	// hint: return g.adjacency.Exists(v)
-	panic("todo: please implement me!")
+	return g.adjacency.Exists(v)
 }
 
 // Vertex iterates over all vertices in the graph.
@@ -261,7 +310,11 @@ func (g *Graph[V]) HasVertex(v V) bool {
 // SCORE: 10
 func (g *Graph[V]) Vertex(yield func(V) bool) {
 	// hint: iterate g.adjacency.Iter, yield entry.Key()
-	panic("todo: please implement me!")
+	for v := range g.adjacency.Iter {
+		if !yield(v.Key()) {
+			break
+		}
+	}
 }
 
 // Neighbors returns an iterator over a vertex's neighbors.
@@ -285,7 +338,16 @@ func (g *Graph[V]) Vertex(yield func(V) bool) {
 func (g *Graph[V]) Neighbors(v V) iter.Seq[V] {
 	// hint: return a function that gets list from adjacency
 	//       and iterates list.Iter, yielding each neighbor
-	panic("todo: please implement me!")
+	return func(yield func(V) bool) {
+		list, ok := g.adjacency.Get(v)
+		if ok {
+			for val := range list.Iter {
+				if !yield(val) {
+					break
+				}
+			}
+		}
+	}
 }
 
 // String returns a string representation of the graph.
@@ -305,5 +367,15 @@ func (g *Graph[V]) Neighbors(v V) iter.Seq[V] {
 func (g *Graph[V]) String() string {
 	// hint: iterate g.adjacency.Iter, format as "Graph{V: [neighbors], ...}"
 	//       use sequence.String(entry.Value().Iter) for neighbors
-	panic("todo: please implement me!")
+	result := "Graph{"
+	first := true
+	for v := range g.adjacency.Iter {
+		if !first {
+			result += ", "
+		}
+		first = false
+		result += fmt.Sprintf("%v: %s", v.Key(), sequence.String(v.Value().Iter))
+	}
+	result += "}"
+	return result
 }

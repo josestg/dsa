@@ -51,6 +51,7 @@ package tree
 
 import (
 	"cmp"
+	"github.com/josestg/dsa/internal/generics"
 
 	"github.com/josestg/dsa/sequence"
 )
@@ -170,7 +171,25 @@ func (t *BinarySearchTree[E]) Add(value E) {
 	//       3) if value > node.data, recurse right
 	//       4) if equal, do nothing (duplicate)
 	//       5) increment size if inserted
-	panic("todo: please implement me!")
+	root, ok := addRecursive(t.root, value)
+	if ok {
+		t.size++
+	}
+	t.root = root
+}
+
+func addRecursive[E cmp.Ordered](node *Node[E], value E) (n *Node[E], ok bool) {
+	if node == nil {
+		return &Node[E]{data: value}, true
+	}
+
+	if value < node.data {
+		node.left, ok = addRecursive(node.left, value)
+	} else if value > node.data {
+		node.right, ok = addRecursive(node.right, value)
+	}
+
+	return node, ok
 }
 
 // Exists checks if a value exists in the BST.
@@ -203,7 +222,22 @@ func (t *BinarySearchTree[E]) Exists(value E) bool {
 	//       2) if value < node.data, search left
 	//       3) if value > node.data, search right
 	//       4) if equal, return true
-	panic("todo: please implement me!")
+	return existRecursive(t.root, value)
+
+}
+
+func existRecursive[E cmp.Ordered](node *Node[E], value E) bool {
+	if node == nil {
+		return false
+	}
+
+	if value < node.data {
+		return existRecursive(node.left, value)
+	} else if value > node.data {
+		return existRecursive(node.right, value)
+	}
+
+	return true
 }
 
 // Del removes a value from the BST, maintaining the ordering property.
@@ -261,7 +295,48 @@ func (t *BinarySearchTree[E]) Del(value E) {
 	//          - both children: find min in right subtree (successor),
 	//            copy value, delete successor from right subtree
 	//       5) decrement size if deleted
-	panic("todo: please implement me!")
+	var deleted bool
+	t.root, deleted = delRecursive(t.root, value)
+	if deleted {
+		t.size--
+	}
+}
+
+func delRecursive[E cmp.Ordered](node *Node[E], value E) (*Node[E], bool) {
+	if node == nil {
+		return nil, false
+	}
+	var deleted bool
+	if value < node.data {
+		node.left, deleted = delRecursive(node.left, value)
+		return node, deleted
+	}
+
+	if value > node.data {
+		node.right, deleted = delRecursive(node.right, value)
+		return node, deleted
+	}
+
+	if node.left == nil {
+		return node.right, true
+	}
+
+	if node.right == nil {
+		return node.left, true
+	}
+
+	successor := minNode(node.right)
+	node.data = successor.data
+
+	node.right, _ = delRecursive(node.right, successor.data)
+	return node, true
+}
+
+func minNode[E cmp.Ordered](node *Node[E]) *Node[E] {
+	for node.left != nil {
+		node = node.left
+	}
+	return node
 }
 
 // Min returns the smallest value in the tree.
@@ -285,7 +360,15 @@ func (t *BinarySearchTree[E]) Min() (E, bool) {
 	// hint: 1) if root == nil, return (zero, false)
 	//       2) traverse left until node.left == nil
 	//       3) return (node.data, true)
-	panic("todo: please implement me!")
+	if t.root == nil {
+		return generics.ZeroValue[E](), false
+	}
+
+	curr := t.root
+	for curr.left != nil {
+		curr = curr.left
+	}
+	return curr.data, true
 }
 
 // Max returns the largest value in the tree.
@@ -309,7 +392,14 @@ func (t *BinarySearchTree[E]) Max() (E, bool) {
 	// hint: 1) if root == nil, return (zero, false)
 	//       2) traverse right until node.right == nil
 	//       3) return (node.data, true)
-	panic("todo: please implement me!")
+	if t.root == nil {
+		return generics.ZeroValue[E](), false
+	}
+	curr := t.root
+	for curr.right != nil {
+		curr = curr.right
+	}
+	return curr.data, true
 }
 
 // InOrder traverses the tree in sorted order (left → root → right).
@@ -344,7 +434,23 @@ func (t *BinarySearchTree[E]) InOrder(visit func(E) bool) {
 	//       2) if !inOrder(node.left, visit), return false
 	//       3) if !visit(node.data), return false
 	//       4) return inOrder(node.right, visit)
-	panic("todo: please implement me!")
+	inOrder(t.root, visit)
+}
+
+func inOrder[E cmp.Ordered](node *Node[E], visit func(E) bool) bool {
+	if node == nil {
+		return true
+	}
+
+	if !inOrder(node.left, visit) {
+		return false
+	}
+
+	if !visit(node.data) {
+		return false
+	}
+
+	return inOrder(node.right, visit)
 }
 
 // Iter is an alias for InOrder, satisfying adt.Iterator.
@@ -391,7 +497,23 @@ func (t *BinarySearchTree[E]) IterBackward(visit func(E) bool) {
 	//       1) recurse right first
 	//       2) visit node
 	//       3) recurse left
-	panic("todo: please implement me!")
+	reverseInOrder(t.root, visit)
+}
+
+func reverseInOrder[E cmp.Ordered](node *Node[E], visit func(E) bool) bool {
+	if node == nil {
+		return true
+	}
+
+	if !reverseInOrder(node.right, visit) {
+		return false
+	}
+
+	if !visit(node.data) {
+		return false
+	}
+
+	return reverseInOrder(node.left, visit)
 }
 
 // PreOrder traverses the tree in pre-order (root → left → right).
@@ -424,7 +546,23 @@ func (t *BinarySearchTree[E]) PreOrder(visit func(E) bool) {
 	//       1) visit node first
 	//       2) recurse left
 	//       3) recurse right
-	panic("todo: please implement me!")
+	preOrder(t.root, visit)
+}
+
+func preOrder[E cmp.Ordered](node *Node[E], visit func(E) bool) bool {
+	if node == nil {
+		return true
+	}
+
+	if !visit(node.data) {
+		return false
+	}
+
+	if !preOrder(node.left, visit) {
+		return false
+	}
+
+	return preOrder(node.right, visit)
 }
 
 // PostOrder traverses the tree in post-order (left → right → root).
@@ -457,5 +595,21 @@ func (t *BinarySearchTree[E]) PostOrder(visit func(E) bool) {
 	//       1) recurse left
 	//       2) recurse right
 	//       3) visit node last
-	panic("todo: please implement me!")
+	postOrder(t.root, visit)
+}
+
+func postOrder[E cmp.Ordered](node *Node[E], visit func(E) bool) bool {
+	if node == nil {
+		return true
+	}
+
+	if !postOrder(node.left, visit) {
+		return false
+	}
+
+	if !postOrder(node.right, visit) {
+		return false
+	}
+
+	return visit(node.data)
 }

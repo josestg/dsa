@@ -239,7 +239,16 @@ func (l *SinglyLinkedList[T]) Append(data T) {
 	//       2) if empty: set head and tail to new node
 	//       3) else: set tail.next = new node, then tail = new node
 	//       4) increment size
-	panic("todo: please implement me!")
+
+	n := NewUnaryNode(data, nil)
+	if l.Empty() {
+		l.head = n
+		l.tail = n
+	} else {
+		l.tail.next = n
+		l.tail = n
+	}
+	l.size++
 }
 
 // Prepend adds an element to the front of the list.
@@ -270,7 +279,16 @@ func (l *SinglyLinkedList[T]) Prepend(data T) {
 	//       2) if empty: set tail = new node
 	//       3) set head = new node
 	//       4) increment size
-	panic("todo: please implement me!")
+
+	n := NewUnaryNode(data, l.head)
+	if l.Empty() {
+		l.tail = n
+		l.head = n
+	} else {
+		n.next = l.head
+		l.head = n
+	}
+	l.size++
 }
 
 // Pop removes and returns the last element.
@@ -326,7 +344,28 @@ func (l *SinglyLinkedList[T]) TryPop() (T, bool) {
 	//       3) else: traverse to find second-to-last node (node.next == tail)
 	//       4) save tail.data, set node.next = nil, tail = node
 	//       5) decrement size, return (saved, true)
-	panic("todo: please implement me!")
+	var zero T
+	if l.Empty() {
+		return zero, false
+	}
+
+	if l.Size() == 1 {
+		val := l.head.data
+		l.reset()
+		return val, true
+	}
+
+	curr := l.head
+	for curr.next != l.tail {
+		curr = curr.next
+	}
+
+	val := l.tail.data
+	curr.next = nil
+	l.tail = curr
+
+	l.size--
+	return val, true
 }
 
 // Shift removes and returns the first element.
@@ -378,7 +417,20 @@ func (l *SinglyLinkedList[T]) TryShift() (T, bool) {
 	//       3) if size == 1: call reset()
 	//       4) else: head = head.next, decrement size
 	//       5) return (saved, true)
-	panic("todo: please implement me!")
+	var zero T
+	if l.Empty() {
+		return zero, false
+	}
+
+	val := l.head.data
+	if l.Size() == 1 {
+		l.reset()
+	} else {
+		l.head = l.head.next
+		l.size--
+	}
+
+	return val, true
 }
 
 // Iter iterates over all elements from front to back.
@@ -480,7 +532,13 @@ func (l *SinglyLinkedList[T]) EnumBackward(yield func(int, T) bool) {
 // SCORE: 10
 func (l *SinglyLinkedList[T]) iterForward(yield func(*UnaryNode[T]) bool) {
 	// hint: p := l.head; loop while p != nil; call yield(p); p = p.next
-	panic("todo: please implement me!")
+	p := l.head
+	for p != nil {
+		if !yield(p) {
+			break
+		}
+		p = p.next
+	}
 }
 
 // SCORE: 10
@@ -488,7 +546,11 @@ func (l *SinglyLinkedList[T]) iterBackward(yield func(*UnaryNode[T]) bool) {
 	// hint: singly linked list has no prev pointer, so:
 	//       option 1: collect all nodes into a slice, iterate in reverse
 	//       option 2: use recursion (traverse to end, yield on the way back)
-	panic("todo: please implement me!")
+	nl := NewSinglyLinkedList[T]()
+	for v := range l.iterForward {
+		nl.Prepend(v.data)
+	}
+	nl.iterForward(yield)
 }
 
 // Get retrieves the element at the given index.
@@ -534,7 +596,21 @@ func (l *SinglyLinkedList[T]) TryGet(index int) (T, bool) {
 	// hint: 1) check bounds (index < 0 || index >= size), return false
 	//       2) traverse from head, counting until you reach index
 	//       3) return (node.data, true)
-	panic("todo: please implement me!")
+	var zero T
+	if index < 0 || index >= l.Size() {
+		return zero, false
+	}
+	p := l.head
+	curr := 0
+	for p != nil {
+		if curr == index {
+			return p.data, true
+		}
+		p = p.next
+		curr++
+	}
+
+	return zero, false
 }
 
 // Set updates the element at the given index.
@@ -588,7 +664,21 @@ func (l *SinglyLinkedList[T]) TrySet(index int, data T) bool {
 	//       2) traverse to node at index
 	//       3) update node.data = data
 	//       4) return true
-	panic("todo: please implement me!")
+	if index < 0 || index >= l.Size() {
+		return false
+	}
+	curr := 0
+	p := l.head
+	for p != nil {
+		if curr == index {
+			p.data = data
+			return true
+		}
+		p = p.next
+		curr++
+	}
+
+	return false
 }
 
 // String returns the string representation of the list.
@@ -660,7 +750,35 @@ func (l *SinglyLinkedList[T]) TryRemove(index int) (T, bool) {
 	//       3) if index == size-1: return TryPop()
 	//       4) else: traverse to node at (index-1), rewire: prev.next = prev.next.next
 	//       5) decrement size, return (removed.data, true)
-	panic("todo: please implement me!")
+	var zero T
+	if index < 0 || index >= l.Size() {
+		return zero, false
+	}
+
+	if index == 0 {
+		return l.TryShift()
+	}
+
+	if index == l.Size()-1 {
+		return l.TryPop()
+	}
+
+	prev := l.head
+	curr := 0
+
+	for curr < index-1 {
+		prev = prev.next
+		curr++
+	}
+
+	// node will be deleted
+	removed := prev.next
+
+	//rewire
+	prev.next = prev.next.next
+
+	l.size--
+	return removed.data, true
 }
 
 // Insert adds an element at the given index.
@@ -708,7 +826,31 @@ func (l *SinglyLinkedList[T]) Insert(index int, data T) {
 	//       5) create new node with next = prev.next
 	//       6) prev.next = new node
 	//       7) increment size
-	panic("todo: please implement me!")
+	if index == 0 {
+		l.Prepend(data)
+		return
+	}
+
+	if index == l.Size() {
+		l.Append(data)
+		return
+	}
+
+	l.checkBounds(index)
+
+	prev := l.head
+	curr := 0
+
+	for curr < index-1 {
+		prev = prev.next
+		curr++
+	}
+
+	newNode := &UnaryNode[T]{data: data, next: prev.next}
+
+	prev.next = newNode
+
+	l.size++
 }
 
 func (l *SinglyLinkedList[T]) checkBounds(index int) {
